@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest
 
 # Load the trained model and scaler
 @st.cache_data
@@ -22,7 +23,7 @@ def preprocess_data(data, non_numeric_cols, scaler, original_features):
     for col in original_features:
         if col not in data_encoded.columns:
             data_encoded[col] = 0  # Add missing columns with default values
-            
+
     data_encoded = data_encoded[original_features]  # Reorder columns to match original data
     
     # Handle missing values
@@ -34,16 +35,16 @@ def preprocess_data(data, non_numeric_cols, scaler, original_features):
     return data_scaled
 
 def detect_fraudulent_transactions(new_data, model, scaler):
-    # Load the original training data to get feature names
-    original_data_path = 'AssignmentData.xlsx'  # Adjust this path
-    original_data = pd.read_excel(original_data_path, sheet_name='creditcard_test')
+    # Identify non-numeric columns and encode the new data
+    non_numeric_cols = new_data.select_dtypes(include=['object']).columns
+    new_data_encoded = pd.get_dummies(new_data, columns=non_numeric_cols, drop_first=True)
     
-    # Identify non-numeric columns and encode the training data
-    non_numeric_cols = original_data.select_dtypes(include=['object']).columns
-    original_data_encoded = pd.get_dummies(original_data, columns=non_numeric_cols, drop_first=True)
+    # Load a sample from the original data to get feature names
+    sample_data = pd.read_excel('creditcard_test.xlsx', sheet_name='creditcard_test')
+    sample_data_encoded = pd.get_dummies(sample_data, columns=sample_data.select_dtypes(include=['object']).columns, drop_first=True)
     
     # Extract the feature names
-    original_features = original_data_encoded.columns
+    original_features = sample_data_encoded.columns
     
     # Preprocess new data
     new_data_scaled = preprocess_data(new_data, non_numeric_cols, scaler, original_features)
